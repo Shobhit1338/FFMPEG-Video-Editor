@@ -5,7 +5,9 @@ from django.http import HttpResponse
 from django.conf import settings
 import mimetypes
 import os
+import json
 import subprocess
+
 
 @csrf_exempt
 def upload_video(request):
@@ -34,13 +36,29 @@ def serve_protected_document(request, filename):
 @csrf_exempt
 def convert_to_portrait(request):
     if request.method == 'POST':
-        video_url = request.POST.get('video_url')
+        data = json.loads(request.body.decode('utf-8'))
+        video_url = data.get('video_url')
         video_name = os.path.basename(video_url)
         output_video_path = os.path.join(settings.MEDIA_ROOT, 'uploads', f'ffmpeg-{video_name}')
         try:
-            subprocess.run(['ffmpeg', '-i', video_url, '-vf', 'scale=720:-2,pad=720:ih:(ow-iw)/2:(oh-ih)/2:black', '-c:a', 'copy', output_video_path])
+            output_video_name = f'ffmpeg-{video_name}'
+            output_video_url = request.build_absolute_uri(settings.MEDIA_URL + 'uploads/' + output_video_name)
+            process = subprocess.Popen(
+                ['ffmpeg', '-i', video_url, '-vf', "scale=720:1280:force_original_aspect_ratio=decrease,pad=720:1280:-1:-1:color=black", '-c:a', 'copy', output_video_path],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True
+            )
+            while True:
+                output = process.stderr.readline()
+                if output == '' and process.poll() is not None:
+                    break
+                if output:
+                    print(output.strip())
+
+            rc = process.poll()
             print('Video converted successfully!!!!!')
-            return JsonResponse({'message': 'Video converted successfully', 'converted_video_url': output_video_path}, status=200)
+            return JsonResponse({'message': 'Video converted successfully', 'converted_video_url': output_video_url}, status=200)
         except Exception as e:
             return JsonResponse({'error': str(e)}, status=500)
     else:
