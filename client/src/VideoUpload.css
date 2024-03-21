@@ -1,0 +1,48 @@
+/* VideoUpload.css */
+.card {
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    transition: transform 0.3s ease-in-out;
+}
+
+.card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+}
+
+.card-header {
+    background-color: #007bff;
+    color: #fff;
+    font-size: 20px;
+    font-weight: 500;
+}
+
+.btn-primary {
+    background-color: #0069d9;
+    border-color: #0062cc;
+}
+
+.btn-primary:hover {
+    background-color: #005cbf;
+    border-color: #0056b3;
+}
+
+.progress-bar {
+    background-color: #007bff;
+}
+
+.spinner-border {
+    width: 3rem;
+    height: 3rem;
+    color: #007bff;
+}
+
+/* Adjust input file - Bootstrap override */
+.input-group-text {
+    background-color: #007bff;
+    color: #fff;
+    border-color: #0062cc;
+}
+
+.form-control[type="file"] {
+    border-color: #0062cc;
+}
