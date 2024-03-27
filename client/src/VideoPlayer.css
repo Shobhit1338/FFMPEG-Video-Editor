@@ -1,6 +1,5 @@
-/* VideoPlayer.css */
 .player-wrapper {
-    max-width: 720px; /* Adjust based on your preference */
+    max-width: 720px;
     margin: auto;
     padding: 20px;
     box-shadow: 0px 0px 8px rgba(0, 0, 0, 0.1);
@@ -9,5 +8,5 @@
 }
 
 .react-player {
-    border-radius: 8px; /* Optional: if you want rounded corners on the player itself */
+    border-radius: 8px;
 }

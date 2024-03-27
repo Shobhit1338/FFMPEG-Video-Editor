@@ -1,7 +1,7 @@
 import React from 'react';
 import VideoUpload from './VideoUpload';
 import 'bootstrap/dist/css/bootstrap.min.css';
-import './App.css'; // Import custom styles
+import './App.css';
 
 function App() {
   return (
