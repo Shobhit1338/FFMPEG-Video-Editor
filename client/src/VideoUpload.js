@@ -4,6 +4,7 @@ import VideoPlayer from './VideoPlayer';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import './VideoUpload.css';
 import { Spinner } from 'react-bootstrap';
+import ReactPlayer from 'react-player';
 
 function VideoUpload() {
     const [video, setVideo] = useState(null);
@@ -13,6 +14,10 @@ function VideoUpload() {
     const [videoDisplayUrl, setVideoDisplayUrl] = useState('');
     const [loading, setLoading] = useState(false);
     const [audioUrl, setAudioUrl] = useState('');
+    const [brightness, setBrightness] = useState(1);
+    const [filter, setFilter] = useState('');
+    const [cacheBuster, setCacheBuster] = useState(0)
+
 
 
     const handleVideoChange = (event) => {
@@ -38,6 +43,7 @@ function VideoUpload() {
                 },
             });
             setUploadedVideoUrl(response.data.video_url);
+            console.log(response.data);
             setShowConvertButton(true);
         } catch (error) {
             console.error('Error uploading video:', error);
@@ -63,28 +69,39 @@ function VideoUpload() {
     };
 
     const handleExtractAudio = async () => {
-        setLoading(true); // Start loading state
+        setLoading(true);
         try {
-            const response = await axios.post(
-                'http://localhost:8000/extract_audio/',
-                { video_url: uploadedVideoUrl }, // Ensure uploadedVideoUrl is the correct path or URL to the video
-                { withCredentials: false }
-            );
-    
-            // Check for a successful extraction by inspecting the response
+            const response = await axios.post('http://localhost:8000/extract_audio/', { video_url: uploadedVideoUrl });
             if (response.status === 200 && response.data.audio_url) {
-                setAudioUrl(response.data.audio_url); // Set the audio URL for playback/download
+                setAudioUrl(response.data.audio_url);
             } else {
-                // Handle cases where the extraction might not have returned an error, but also didn't succeed
                 console.error('Audio extraction was not successful.', response.data);
             }
         } catch (error) {
             console.error('Error extracting audio:', error);
-            // Optionally, update the UI to inform the user an error occurred
         } finally {
-            setLoading(false); // End loading state regardless of outcome
+            setLoading(false);
         }
-    };
+    };    
+
+    const applyEffects = async () => {
+        setLoading(true);
+        try {
+          const response = await axios.post('http://localhost:8000/api/apply-effects', {
+            videoUrl: uploadedVideoUrl,
+            brightness,
+            filter
+          });
+          const fullVideoUrl = `http://localhost:8000${response.data.convertedVideoUrl}`;
+          setVideoDisplayUrl(fullVideoUrl);
+          setCacheBuster(prev => prev + 1);
+        } catch (error) {
+          console.error('Error applying effects:', error);
+        } finally {
+            setLoading(false);
+        }
+      };
+      
       
 
     return (
@@ -99,7 +116,7 @@ function VideoUpload() {
                         </div>
                     </div>
                     {loading && <div className="spinner-container mt-3"><Spinner animation="border" variant="light" /></div>}
-                    {uploadProgress > 0 && !loading && (
+                    {uploadProgress > 0 && uploadProgress < 100 && (
                         <div className="progress mt-3" style={{height: '30px'}}>
                             <div className="progress-bar" role="progressbar" style={{ width: `${uploadProgress}%` }} aria-valuenow={uploadProgress} aria-valuemin="0" aria-valuemax="100">
                                 {uploadProgress}%
@@ -108,20 +125,35 @@ function VideoUpload() {
                     )}
                 </form>
                 {uploadedVideoUrl && (
-                            <>
-                        <VideoPlayer videoUrl={videoDisplayUrl || uploadedVideoUrl} />
+                    <>
+                    <VideoPlayer videoUrl={`${videoDisplayUrl || uploadedVideoUrl}?cb=${cacheBuster}`} />
                         <div className="video-controls">
                             {showConvertButton && (
                                 <button className="btn btn-secondary mt-3" onClick={handleConvertClick}>Convert to Portrait</button>
                             )}
                             <button className="btn btn-secondary mt-3" onClick={handleExtractAudio}>Extract Audio</button>
                         </div>
+                        <div>
+                            <input
+                                type="range"
+                                min="0.1"
+                                max="2"
+                                step="0.1"
+                                value={brightness}
+                                onChange={(e) => setBrightness(e.target.value)}
+                            />
+                            <select onChange={(e) => setFilter(e.target.value)}>
+                                <option value="">Select a Filter</option>
+                                <option value="vignette">Vignette</option>
+                            </select>
+                            <button onClick={applyEffects}>Convert</button>
+                        </div>
                     </>
                 )}
                 {audioUrl && (
-                    <div className="audio-player-container">
-                        <audio controls src={audioUrl} className="mt-3"></audio>
-                        <a href={audioUrl} download className="btn btn-success mt-3">Download Audio</a>
+                    <div className="audio-player-container mt-3">
+                        <ReactPlayer url={audioUrl} width="100%" height="50px" controls={true} />
+                        <a href={audioUrl} download="downloaded_audio.mp3" className="btn btn-success mt-3">Download Audio</a>
                     </div>
                 )}
             </div>
