@@ -12,6 +12,8 @@ function VideoUpload() {
     const [showConvertButton, setShowConvertButton] = useState(false);
     const [videoDisplayUrl, setVideoDisplayUrl] = useState('');
     const [loading, setLoading] = useState(false);
+    const [audioUrl, setAudioUrl] = useState('');
+
 
     const handleVideoChange = (event) => {
         setVideo(event.target.files[0]);
@@ -60,6 +62,31 @@ function VideoUpload() {
         }
     };
 
+    const handleExtractAudio = async () => {
+        setLoading(true); // Start loading state
+        try {
+            const response = await axios.post(
+                'http://localhost:8000/extract_audio/',
+                { video_url: uploadedVideoUrl }, // Ensure uploadedVideoUrl is the correct path or URL to the video
+                { withCredentials: false }
+            );
+    
+            // Check for a successful extraction by inspecting the response
+            if (response.status === 200 && response.data.audio_url) {
+                setAudioUrl(response.data.audio_url); // Set the audio URL for playback/download
+            } else {
+                // Handle cases where the extraction might not have returned an error, but also didn't succeed
+                console.error('Audio extraction was not successful.', response.data);
+            }
+        } catch (error) {
+            console.error('Error extracting audio:', error);
+            // Optionally, update the UI to inform the user an error occurred
+        } finally {
+            setLoading(false); // End loading state regardless of outcome
+        }
+    };
+      
+
     return (
         <div className="upload-container d-flex align-items-center justify-content-center py-5">
             <div className="upload-card text-center p-5">
@@ -81,13 +108,20 @@ function VideoUpload() {
                     )}
                 </form>
                 {uploadedVideoUrl && (
-                    <div className="mt-4">
+                            <>
                         <VideoPlayer videoUrl={videoDisplayUrl || uploadedVideoUrl} />
-                        {showConvertButton && (
-                            <div className="mt-3">
-                                <button className="btn convert-btn" onClick={handleConvertClick}>Convert to Portrait</button>
-                            </div>
-                        )}
+                        <div className="video-controls">
+                            {showConvertButton && (
+                                <button className="btn btn-secondary mt-3" onClick={handleConvertClick}>Convert to Portrait</button>
+                            )}
+                            <button className="btn btn-secondary mt-3" onClick={handleExtractAudio}>Extract Audio</button>
+                        </div>
+                    </>
+                )}
+                {audioUrl && (
+                    <div className="audio-player-container">
+                        <audio controls src={audioUrl} className="mt-3"></audio>
+                        <a href={audioUrl} download className="btn btn-success mt-3">Download Audio</a>
                     </div>
                 )}
             </div>

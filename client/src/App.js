@@ -5,11 +5,11 @@ import './App.css';
 
 function App() {
   return (
-    <div className="App">
-      <header className="App-header text-center py-3 mb-5">
-        <h1>Video Converter</h1>
+    <div className="App d-flex flex-column min-vh-100 justify-content-center align-items-center">
+      <header className="App-header">
+        <h1 className="text-uppercase">Video Converter</h1>
       </header>
-      <main className="container">
+      <main className="container mt-5">
         <VideoUpload />
       </main>
     </div>

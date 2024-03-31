@@ -2,12 +2,11 @@ from django.http import Http404, JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from .models import UploadedVideo
 from django.http import HttpResponse
-from django.conf import settings
+from video_converter_project import settings
 import mimetypes
 import os
 import json
 import subprocess
-
 
 @csrf_exempt
 def upload_video(request):
@@ -70,3 +69,50 @@ def conversion_progress(request):
     progress = 50  # For example, set progress to 50% (you need to update this with your actual logic)
 
     return JsonResponse({'progress': progress})
+
+@csrf_exempt
+def extract_audio(request):
+    if request.method == 'POST':
+        data = json.loads(request.body.decode('utf-8'))
+        video_url = data.get('video_url')
+        video_path = video_url.replace('http://localhost:8000/media/', str(settings.MEDIA_ROOT) + '/')
+
+        video_name = os.path.basename(video_path)
+        base_video_name, _ = os.path.splitext(video_name)
+        audio_output_name = f'{base_video_name}.mp3'
+
+        audio_output_path = os.path.join(settings.MEDIA_ROOT, 'audio', audio_output_name)
+        audio_output_url = request.build_absolute_uri(settings.MEDIA_URL + 'audio/' + audio_output_name)
+
+        try:
+            command = [
+                'ffmpeg', '-i', video_path,
+                '-vn',
+                '-acodec', 'libmp3lame',
+                '-q:a', '2',
+                audio_output_path
+            ]
+            process = subprocess.Popen(
+                command,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True
+            )
+            stderr_output = []
+            while True:
+                line = process.stderr.readline()
+                if not line and process.poll() is not None:
+                    break
+                if line:
+                    stderr_output.append(line.strip())
+
+            rc = process.poll()
+            if rc == 0:
+                return JsonResponse({'message': 'Audio extracted successfully', 'audio_url': audio_output_url}, status=200)
+            else:
+                error_details = "\n".join(stderr_output)
+                return JsonResponse({'error': f"Audio extraction failed with code {rc}: {error_details}"}, status=500)
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=500)
+    else:
+        return JsonResponse({'error': 'Method not allowed'}, status=405)

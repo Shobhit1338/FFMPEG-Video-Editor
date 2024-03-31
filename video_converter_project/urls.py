@@ -24,4 +24,5 @@ urlpatterns = [
     path('convert_to_portrait/', views.convert_to_portrait, name='convert_to_portrait'),
     path('conversion_progress/', views.conversion_progress, name='conversion_progress'),
     path('upload/', views.upload_video, name='upload_video'),
+    path('extract_audio/', views.extract_audio, name='extract_audio'),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
