@@ -7,9 +7,9 @@ function App() {
   return (
     <div className="App d-flex flex-column min-vh-100 justify-content-center align-items-center">
       <header className="App-header">
-        <h1 className="text-uppercase">Video Converter</h1>
+        <h1 className="text-uppercase">FFmpeg Video Playground</h1>
       </header>
-      <main className="container mt-5">
+      <main className="container">
         <VideoUpload />
       </main>
     </div>
