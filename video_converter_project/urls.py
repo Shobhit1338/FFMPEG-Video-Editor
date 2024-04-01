@@ -26,4 +26,6 @@ urlpatterns = [
     path('upload/', views.upload_video, name='upload_video'),
     path('extract_audio/', views.extract_audio, name='extract_audio'),
     path('api/apply-effects', views.apply_effects, name='apply_effects'),
+    path('upload_image/', views.upload_image, name='upload_image'),
+    path('do_magic/', views.do_magic, name='do_magic'),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

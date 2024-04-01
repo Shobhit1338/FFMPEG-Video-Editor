@@ -1,6 +1,6 @@
 from django.http import Http404, JsonResponse
 from django.views.decorators.csrf import csrf_exempt
-from .models import UploadedVideo
+from .models import UploadedVideo, UploadedImage
 from django.http import HttpResponse
 # from video_converter_project import settings
 from django.conf import settings
@@ -10,7 +10,7 @@ import json
 from urllib.parse import urlparse
 import subprocess
 import os.path
-
+from django.shortcuts import render
 @csrf_exempt
 def upload_video(request):
     if request.method == 'POST':
@@ -22,6 +22,18 @@ def upload_video(request):
             return JsonResponse({'message': 'Video uploaded successfully!', 'video_url': video_url, 'filename': video.video.name}, status=201)
     else:
         return JsonResponse({'error': 'Method not allowed'}, status=405)
+
+@csrf_exempt
+def upload_image(request):
+    if request.method == 'POST':
+        image_file = request.FILES.get('image')
+        if image_file:
+            image = UploadedImage(image=image_file)
+            image.save()
+            image_url = request.build_absolute_uri(f'/media/{image.image.name}')
+            return JsonResponse({'message': 'Image uploaded successfully!', 'image_url': image_url, 'filename': image.image.name}, status=201)
+    return JsonResponse({'error': 'Method not allowed'}, status=405)
+
 
 def serve_protected_document(request, filename):
     print(filename)
@@ -158,3 +170,59 @@ def apply_effects(request):
             return JsonResponse({'error': 'Failed to convert video'}, status=500)
     
     return JsonResponse({'error': 'Method not allowed'}, status=405)
+
+@csrf_exempt
+def do_magic(request):
+    if request.method == 'POST':
+        data = json.loads(request.body)
+        base_video_url = data.get('base_video_url')
+        overlay_image_url = data.get('overlay_image_url')
+
+        if not base_video_url or not overlay_image_url:
+            return JsonResponse({'error': 'Both base video URL and overlay image URL are required.'}, status=400)
+
+        base_video_filename = base_video_url.split('/')[-1]
+        overlay_image_filename = overlay_image_url.split('/')[-1]
+        base_video_path = os.path.join(settings.MEDIA_ROOT, 'uploads', base_video_filename)
+        overlay_image_path = os.path.join(settings.MEDIA_ROOT, 'images', overlay_image_filename)
+        output_video_path = os.path.join(settings.MEDIA_ROOT, 'result.mp4')
+
+        try:
+            # Step 1: Extract green screen area dimensions from base video
+            green_screen_info_command = [
+                'ffprobe', '-v', 'error', '-select_streams', 'v:0', '-show_entries', 'stream=width,height',
+                '-of', 'json', base_video_path
+            ]
+            green_screen_info_process = subprocess.Popen(green_screen_info_command, stdout=subprocess.PIPE)
+            green_screen_info_output, _ = green_screen_info_process.communicate()
+            green_screen_info = json.loads(green_screen_info_output)
+            width = green_screen_info['streams'][0]['width']
+            height = green_screen_info['streams'][0]['height']
+
+            # Step 2: Resize overlay image to match green screen area dimensions
+            overlay_resize_command = [
+                'ffmpeg', '-i', overlay_image_path,
+                '-vf', f'scale={width}:{height}', 'resized_overlay.png'
+            ]
+            subprocess.run(overlay_resize_command, check=True)
+
+            # Step 3: Overlay resized image onto green screen area
+            overlay_command = [
+                'ffmpeg', '-i', base_video_path, '-i', 'resized_overlay.png',
+                '-filter_complex', f'[1:v]chromakey=0x00FF00:0.1:0.2[ckout];[0:v][ckout]overlay[out]',
+                '-map', '[out]', output_video_path
+            ]
+            subprocess.run(overlay_command, check=True)
+
+            # Return the URL of the resulting video
+            result_video_url = os.path.join(settings.MEDIA_URL, 'result.mp4')
+            return JsonResponse({'result_video_url': result_video_url}, status=200)
+
+        except subprocess.CalledProcessError as e:
+            return JsonResponse({'error': f'Error processing video: {e.stderr.decode()}'}, status=500)
+
+        except Exception as e:
+            return JsonResponse({'error': f'Unexpected error: {str(e)}'}, status=500)
+
+    else:
+        return JsonResponse({'error': 'Method not allowed'}, status=405)
