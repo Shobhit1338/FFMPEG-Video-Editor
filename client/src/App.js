@@ -18,21 +18,21 @@ function App() {
         <h1 className="text-uppercase">FFmpeg Video Playground</h1>
       </header>
       <main className="container">
-      <div className="btn-group" role="group" aria-label="Pages">
-        {currentPage !== 'upload' && (
-          <button className="btn btn-primary" onClick={() => switchPage('upload')}>
-            Upload Video
-          </button>
-        )}
-        {currentPage !== 'green-screen' && (
-          <button className="btn btn-primary" onClick={() => switchPage('green-screen')}>
-            Green Screen
-          </button>
-        )}
-      </div>
-        {/* Conditional rendering based on the current page */}
-        {currentPage === 'upload' && <VideoUpload />}
-        {currentPage === 'green-screen' && <GreenScreen />}
+        <div className="btn-group" role="group" aria-label="Pages">
+          {currentPage !== 'upload' && (
+            <button className="btn btn-primary" onClick={() => switchPage('upload')}>
+              Upload Video
+            </button>
+          )}
+          {currentPage !== 'green-screen' && (
+            <button className="btn btn-primary" onClick={() => switchPage('green-screen')}>
+              Green Screen
+            </button>
+          )}
+        </div>
+          {/* Conditional rendering based on the current page */}
+          {currentPage === 'upload' && <VideoUpload />}
+          {currentPage === 'green-screen' && <GreenScreen />}
       </main>
     </div>
   );
